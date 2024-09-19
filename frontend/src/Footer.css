@@ -1,0 +1,21 @@
+/* Footer.css */
+
+.footer {
+    background-color: #004e98;
+    color: #fff;
+    padding: 12px 0;
+    width: 100%;
+    position: fixed; /* Fix footer at the bottom */
+    bottom: 0;
+    left: 0;
+}
+
+.footer-container {
+    max-width: 100%; /* Adjust as needed */
+    padding: 0 20px; /* Add padding for content */
+    margin: 0 auto;
+}
+
+.footer p {
+    margin: 0;
+}

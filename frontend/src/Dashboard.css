@@ -1,0 +1,229 @@
+/* General dashboard layout */
+.dashboard {
+    display: flex;
+    height: 100vh;
+    font-family: Arial, sans-serif;
+}
+
+.sidebar {
+    width: 220px !important;
+    background-color: #2c3e50;
+    color: white;
+    padding: 20px;
+}
+
+.sidebar ul {
+    list-style-type: none;
+    padding: 0;
+}
+
+.sidebar ul li {
+    margin: 20px 0;
+}
+
+.sidebar ul li a {
+    color: white;
+    text-decoration: none;
+    font-size: 16px;
+}
+
+.sidebar ul li a:hover {
+    text-decoration: none;
+}
+
+.main-content {
+    flex: 1;
+    padding: 20px;
+    background-color: #ecf0f1;
+    overflow-y: auto;
+}
+
+.header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 20px;
+}
+
+.header h1 {
+    margin: 0;
+    font-size: 24px;
+}
+
+.user-info {
+    display: flex;
+    align-items: center;
+}
+
+.profile-pic {
+    width: 40px;
+    height: 40px;
+    border-radius: 50%;
+    margin-right: 10px;
+}
+
+.favorites {
+    display: flex;
+    justify-content: space-between;
+    margin-bottom: 20px;
+}
+
+.card {
+    background-color: white;
+    padding: 20px;
+    border-radius: 5px;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+    flex: 1;
+    margin: 0 10px;
+    text-align: center;
+    cursor: pointer;
+    transition: transform 0.2s;
+}
+
+.card:hover {
+    transform: translateY(-5px);
+}
+
+.parts-journey {
+    background-color: white;
+    padding: 20px;
+    border-radius: 5px;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+.parts-journey h2 {
+    margin-top: 0;
+}
+
+.filter-options {
+    display: flex;
+    justify-content: space-between;
+    margin-bottom: 20px;
+}
+
+.parts-list {
+    display: flex;
+    flex-direction: column;
+}
+
+.part {
+    display: flex;
+    justify-content: space-between;
+    padding: 10px;
+    border-bottom: 1px solid #bdc3c7;
+}
+
+.status-button {
+    background-color: #e74c3c;
+    color: white;
+    border: none;
+    padding: 5px 10px;
+    border-radius: 5px;
+    cursor: pointer;
+}
+
+.status-button:hover {
+    background-color: #c0392b;
+}
+
+
+/* General styles for items list */
+.items-list {
+    background-color: #f8f9fa;
+    padding: 20px;
+    border-radius: 5px;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+    margin-top: 20px;
+}
+
+.items-list h2 {
+    font-size: 1.5rem;
+    color: #333;
+    margin-bottom: 15px;
+    font-weight: bold;
+    border-bottom: 2px solid #007bff;
+    padding-bottom: 5px;
+}
+
+.items-list form {
+    margin-bottom: 20px;
+}
+
+.items-list input {
+    width: 100%;
+    padding: 8px;
+    margin: 5px 0;
+    border: 1px solid #dbdbdb;
+    border-radius: 5px;
+    font-size: 1rem;
+    box-sizing: border-box;
+    background-color: #fff;
+    color: #000;
+}
+
+.items-list button {
+    background-color: #27ae60;
+    color: white;
+    border: none;
+    padding: 10px 15px;
+    border-radius: 5px;
+    cursor: pointer;
+    transition: background-color 0.2s;
+}
+
+.items-list button:hover {
+    background-color: #1e8449;
+}
+
+.items-list p {
+    margin-top: 15px;
+    color: #e74c3c;
+}
+
+/* Styles for items list (suppliers, parts, tools) */
+.items-list ul {
+    list-style-type: none;
+    padding: 0;
+    margin: 0;
+}
+
+.items-list ul li {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 10px;
+    border-bottom: 1px solid #bdc3c7;
+}
+
+.items-list ul li:last-child {
+    border-bottom: none;
+}
+
+.items-list ul li span {
+    flex: 1;
+}
+
+.items-list ul li .supplier-actions, 
+.items-list ul li .part-actions, 
+.items-list ul li .tool-actions {
+    display: flex;
+    gap: 5px;
+}
+
+.items-list ul li .supplier-actions button, 
+.items-list ul li .part-actions button, 
+.items-list ul li .tool-actions button {
+    background-color: #3498db;
+    color: white;
+    border: none;
+    padding: 5px 10px;
+    border-radius: 5px;
+    cursor: pointer;
+    transition: background-color 0.2s;
+}
+
+.items-list ul li .supplier-actions button:hover, 
+.items-list ul li .part-actions button:hover, 
+.items-list ul li .tool-actions button:hover {
+    background-color: #2980b9;
+}

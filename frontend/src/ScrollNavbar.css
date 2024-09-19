@@ -1,0 +1,49 @@
+/* ScrollNavbar.css */
+.navbar {
+    position: fixed;
+    top: 0;
+    width: 100%;
+    height: 8vh;
+    background-color: transparent; /* Initial background color */
+    transition: background-color 0.3s; /* Smooth transition for background color change */
+    z-index: 1000; /* Ensure the navbar is on top */
+}
+
+.navbar.scrolled {
+    background-color: #004e98; /* Background color when scrolled */
+}
+
+.navbar-container {
+    display: flex;
+    justify-content: space-between; /* Space between logo and menu */
+    align-items: center; /* Center items vertically */
+    padding: 0 20px; /* Optional: Add padding for better alignment */
+}
+
+.navbar-logo {
+    font-size: 1.5rem;
+    color: #fff; /* White color for the logo text */
+}
+
+.navbar-menu {
+    list-style: none; /* Remove default list styling */
+    display: flex; /* Display items in a row */
+    margin: 0; /* Remove default margin */
+    padding: 0; /* Remove default padding */
+
+
+}
+
+.navbar-item {
+    margin-left: 20px; /* Space between menu items */
+}
+
+.navbar-item a, .navbar-item .Link {
+    color: #fff; /* White color for the links */
+    text-decoration: none; /* Remove underline */
+    transition: color 0.3s; /* Smooth transition for hover effect */
+}
+
+.navbar-item a:hover, .navbar-item .Link:hover {
+    color: #ddd; /* Lighter color on hover */
+}

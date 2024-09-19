@@ -1,0 +1,70 @@
+/* ServicesPage.css */
+
+body, html {
+    margin: 0;
+    padding: 0;
+    font-family: Arial, sans-serif;
+    background-color: #fff; /* White background */
+    color: #333; /* Dark grey text */
+}
+
+#root {
+    display: flex;
+    flex-direction: column;
+    min-height: 100vh;
+}
+
+
+.services-content {
+    padding-top: 70px; /* Adjust according to navbar height */
+    padding-bottom: 50px;
+    padding-left: 20px;
+    padding-right: 20px;
+    flex: 1;
+}
+
+.services-content h1 {
+    color: #004e98; /* Dark blue heading */
+    margin-bottom: 20px;
+}
+
+.services-content p {
+    font-size: 1.2em;
+    line-height: 1.6;
+    margin-bottom: 20px;
+}
+
+.service-cards {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: center;
+}
+
+.service-card {
+    flex: 1 1 300px;
+    margin: 10px;
+    padding: 20px;
+    border: 1px solid #ddd;
+    border-radius: 5px;
+    background-color: #fff; /* White background */
+    box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+    text-align: left;
+}
+
+.service-card h3 {
+    margin-top: 0;
+    color: #004e98; /* Dark blue subheading */
+}
+
+.service-card p {
+    margin: 10px 0 0;
+    color: #555; /* Dark grey text within cards */
+}
+
+footer {
+    margin-top: auto;
+    background-color: #004e98; /* Dark blue footer */
+    color: #fff; /* White text */
+    text-align: center;
+    padding: 10px 0;
+}

@@ -1,0 +1,65 @@
+body, html {
+    margin: 0;
+    padding: 0;
+    font-family: Arial, sans-serif;
+    background-color: #fff; /* White background */
+    color: #333; /* Dark grey text */
+}
+
+#root {
+    display: flex;
+    flex-direction: column;
+    min-height: 100vh;
+}
+
+.about-content {
+    padding-top: 70px; /* Adjust this value according to your navbar height */
+    padding-bottom: 50px;
+    padding-left: 20px;
+    padding-right: 20px;
+    flex: 1;
+}
+
+.about-content h1, .about-content h2 {
+    color: #004e98; /* Dark blue heading */
+    margin-bottom: 20px;
+}
+
+.about-content p {
+    font-size: 1.2em;
+    line-height: 1.6;
+    margin-bottom: 20px;
+}
+
+.about-cards {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: center;
+}
+
+.about-card {
+    flex: 1 1 300px;
+    margin: 10px;
+    padding: 20px;
+    border: 1px solid #ddd;
+    border-radius: 5px;
+    background-color: #fff; /* White background */
+    box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+    text-align: left;
+}
+
+.about-card h3 {
+    color: #004e98; /* Dark blue subheading */
+}
+
+.about-card p {
+    color: #555; /* Dark grey text within cards */
+}
+
+footer {
+    margin-top: auto;
+    background-color: #004e98; /* Dark blue footer */
+    color: #fff; /* White text */
+    text-align: center;
+    padding: 10px 0;
+}
