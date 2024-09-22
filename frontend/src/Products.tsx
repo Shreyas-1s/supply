@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import './Products.css';  // Import your CSS file
+import './Products.css';
 
 interface Product {
   id: string;
@@ -11,21 +11,20 @@ interface Product {
 export default function Products() {
   const [products, setProducts] = useState<Product[]>([]);
   const [newProduct, setNewProduct] = useState<Omit<Product, 'id'>>({ name: '', sku: '', price: 0 });
+  const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
     fetchProducts();
   }, []);
 
   const fetchProducts = async () => {
+    setError(null);
     try {
       const response = await fetch('http://127.0.0.1:5000/api/products');
-  
       if (!response.ok) {
         throw new Error(`HTTP error! status: ${response.status}`);
       }
-  
       const data = await response.json();
-  
       if (Array.isArray(data)) {
         setProducts(data);
       } else {
@@ -33,9 +32,10 @@ export default function Products() {
       }
     } catch (error) {
       console.error('Error fetching products:', error);
+      setError('Failed to fetch products. Please try again later.');
     }
   };
-  
+
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const { name, value } = e.target;
     setNewProduct(prev => ({
@@ -46,32 +46,31 @@ export default function Products() {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    setError(null);
     try {
-      const response = await fetch('http://127.0.0.1:5000/api/products', {  // Make sure the URL matches the Flask route
+      const response = await fetch('http://127.0.0.1:5000/api/products', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(newProduct)
       });
-  
       if (!response.ok) {
-        const errorMessage = await response.text();
-        throw new Error(`Error: ${response.status} - ${errorMessage}`);
+        const errorData = await response.json();
+        throw new Error(errorData.error || `Error: ${response.status}`);
       }
-  
       const data = await response.json();
       console.log('Product added:', data);
-      fetchProducts();  // Refresh the product list after adding
-      setNewProduct({ name: '', sku: '', price: 0 });  // Reset the form
+      fetchProducts(); // Refresh the product list after adding
+      setNewProduct({ name: '', sku: '', price: 0 }); // Reset the form
     } catch (error) {
       console.error('Error adding product:', error);
+      setError('Failed to add product. Please try again.');
     }
   };
-  
-  
 
   return (
     <div className="container">
       <h1>Products</h1>
+      {error && <div className="error">{error}</div>}
       <form onSubmit={handleSubmit} className="form">
         <input
           type="text"

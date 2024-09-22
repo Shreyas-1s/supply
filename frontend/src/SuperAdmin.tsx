@@ -179,67 +179,7 @@ const SuperAdmin: React.FC = () => {
           )}
         </div>
 
-        <div className="product-container">
-          <h2>Add Product</h2>
-          <label>Name:</label>
-          <input
-            type="text"
-            name="name"
-            value={newProduct.name || ''}
-            onChange={handleChangeProduct}
-          />
-          <label>Description:</label>
-          <input
-            type="text"
-            name="description"
-            value={newProduct.description || ''}
-            onChange={handleChangeProduct}
-          />
-          <label>Price:</label>
-          <input
-            type="number"
-            name="price"
-            value={newProduct.price || ''}
-            onChange={handleChangeProduct}
-          />
-          <label>Image URL:</label>
-          <input
-            type="text"
-            name="imageUrl"
-            value={newProduct.imageUrl || ''}
-            onChange={handleChangeProduct}
-          />
-          <button onClick={handleAddProduct}>Add Product</button>
-        </div>
-
-        {loading ? (
-          <p>Loading...</p>
-        ) : error ? (
-          <p className="error-message">{error}</p>
-        ) : (
-          <table className="products-table">
-            <thead>
-              <tr>
-                <th>ID</th>
-                <th>Name</th>
-                <th>Description</th>
-                <th>Price</th>
-                <th>Image URL</th>
-              </tr>
-            </thead>
-            <tbody>
-              {products.map(product => (
-                <tr key={product.id}>
-                  <td>{product.id}</td>
-                  <td>{product.name}</td>
-                  <td>{product.description}</td>
-                  <td>${product.price.toFixed(2)}</td>
-                  <td>{product.imageUrl}</td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        )}
+        
       </div>
     </div>
   );

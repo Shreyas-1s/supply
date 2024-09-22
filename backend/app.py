@@ -2,6 +2,8 @@ from flask import Flask, request, jsonify
 from neo4j import GraphDatabase  # type: ignore
 from flask_cors import CORS
 
+import uuid
+
 
 
 app = Flask(__name__, static_folder='static', template_folder='templates')
@@ -14,7 +16,8 @@ password = "12345678"
 driver = GraphDatabase.driver(uri, auth=(username, password))
 
 def get_db():
-    return driver.session()
+    # return driver.session()
+    return driver
 
 # Helper Functions
 def execute_query(query, parameters=None, write=False):
@@ -33,6 +36,9 @@ def create_node(label, properties):
     query = f"MERGE (n:{label} {{ {', '.join([f'{k}: ${k}' for k in properties])} }}) RETURN n"
     execute_query(query, properties, write=True)
 
+@app.teardown_appcontext
+def close_driver(exception):
+    driver.close()
 def find_all_nodes(label):
     with driver.session() as session:
         result = session.run(f"MATCH (n:{label}) RETURN n")
@@ -221,138 +227,447 @@ def get_order(order_id):
 #     deleted = delete_node('Product', 'name', name)
 #     return jsonify({"message": "Product deleted successfully!" if deleted else "Product not found"}), 200 if deleted else 404
 
-@app.route('/api/products', methods=['GET', 'POST'])
-def products():
-    db = get_db()
-    try:
-        with db.session() as session:  # Open the session correctly
-            result = session.run(
-                """
-                MATCH (main:Products)-[:CONTAINS]->(p:Product)
-                RETURN p
-                """
-            )
-            products = [{'id': record['p']['id'], 'name': record['p']['name'], 'sku': record['p']['sku'], 'price': record['p']['price']} for record in result]
-            return jsonify(products), 200
-    except Exception as e:
-        return jsonify({'error': str(e)}), 500
-    finally:
-        db.close()  # Ensure the driver is closed properly
+# @app.route('/api/products', methods=['GET', 'POST'])
+# def products():
+#     db = get_db()
+#     try:
+#         with db.session() as session:  # Open the session correctly
+#             result = session.run(
+#                 """
+#                 MATCH (main:Products)-[:CONTAINS]->(p:Product)
+#                 RETURN p
+#                 """
+#             )
+#             products = [{'id': record['p']['id'], 'name': record['p']['name'], 'sku': record['p']['sku'], 'price': record['p']['price']} for record in result]
+#             return jsonify(products), 200
+#     except Exception as e:
+#         return jsonify({'error': str(e)}), 500
+#     finally:
+#         db.close()  # Ensure the driver is closed properly
 
-@app.route('/api/products', methods=['POST'])
-def add_product():
-    db = get_db()
-    data = request.json
+# @app.route('/api/products', methods=['POST'])
+# def add_product():
+#     db = get_db()
+#     data = request.json
 
-    if 'name' not in data or 'sku' not in data or 'price' not in data:
-        return jsonify({'error': 'Missing fields'}), 400
+#     if 'name' not in data or 'sku' not in data or 'price' not in data:
+#         return jsonify({'error': 'Missing fields'}), 400
 
-    try:
-        with db.session() as session:
-            result = session.run(
-                """
-                MATCH (main:Products)
-                CREATE (p:Product {id: apoc.create.uuid(), name: $name, sku: $sku, price: $price})
-                MERGE (main)-[:CONTAINS]->(p)
-                RETURN p
-                """,
-                name=data['name'], sku=data['sku'], price=data['price']
-            )
-            new_product = result.single()['p']
-            return jsonify(dict(new_product)), 201
-    except Exception as e:
-        return jsonify({'error': str(e)}), 500
-    finally:
-        db.close()
+#     try:
+#         with db.session() as session:
+#             result = session.run(
+#                 """
+#                 MATCH (main:Products)
+#                 CREATE (p:Product {id: apoc.create.uuid(), name: $name, sku: $sku, price: $price})
+#                 MERGE (main)-[:CONTAINS]->(p)
+#                 RETURN p
+#                 """,
+#                 name=data['name'], sku=data['sku'], price=data['price']
+#             )
+#             new_product = result.single()['p']
+#             return jsonify(dict(new_product)), 201
+#     except Exception as e:
+#         return jsonify({'error': str(e)}), 500
+#     finally:
+#         db.close()
 
+# @app.route('/api/products', methods=['GET', 'POST'])
+# def products():
+#     if request.method == 'GET':
+#         return get_products()
+#     elif request.method == 'POST':
+#         return add_product()
 
-@app.route('/api/shipments', methods=['GET', 'POST'])
-def shipments():
-    db = get_db()
-    if request.method == 'GET':
-        result = db.run("MATCH (s:Shipment)-[:CONTAINS]->(p:Product) RETURN s, p")
-        shipments = [{**dict(row['s']), 'product': dict(row['p'])} for row in result]
-        return jsonify(shipments)
-    elif request.method == 'POST':
-        data = request.json
-        result = db.run(
-            """
-            MATCH (p:Product {id: $product_id})
-            CREATE (s:Shipment {id: randomUUID(), quantity: $quantity, destination: $destination, status: $status})
-            CREATE (s)-[:CONTAINS]->(p)
-            RETURN s, p
-            """,
-            product_id=data['productId'], quantity=data['quantity'],
-            destination=data['destination'], status=data['status']
-        )
-        new_shipment = result.single()
-        return jsonify({**dict(new_shipment['s']), 'product': dict(new_shipment['p'])}), 201
+# def get_products():
+#     db = get_db()
+#     try:
+#         with db.session() as session:
+#             result = session.run(
+#                 """
+#                 MATCH (main:Products)-[:CONTAINS]->(p:Product)
+#                 RETURN p
+#                 """
+#             )
+#             products = [dict(record['p']) for record in result]
+#             return jsonify(products), 200
+#     except Exception as e:
+#         app.logger.error(f"Error fetching products: {str(e)}")
+#         return jsonify({'error': 'Internal server error'}), 500
+
+# def add_product():
+#     db = get_db()
+#     data = request.json
+#     if not all(key in data for key in ['name', 'sku', 'price']):
+#         return jsonify({'error': 'Missing required fields'}), 400
+#     try:
+#         with db.session() as session:
+#             result = session.run(
+#                 """
+#                 MERGE (main:Products)
+#                 CREATE (p:Product {id: apoc.create.uuid(), name: $name, sku: $sku, price: $price})
+#                 MERGE (main)-[:CONTAINS]->(p)
+#                 RETURN p
+#                 """,
+#                 name=data['name'], sku=data['sku'], price=float(data['price'])
+#             )
+#             new_product = dict(result.single()['p'])
+#             return jsonify(new_product), 201
+#     except Exception as e:
+#         app.logger.error(f"Error adding product: {str(e)}")
+#         return jsonify({'error': 'Internal server error'}), 500
+
+# @app.route('/api/products', methods=['GET'])
+# def get_products():
+#     with driver.session() as session:
+#         result = session.run("MATCH (p:Product) RETURN p")
+#         products = [{"id": record["p"]["id"], "name": record["p"]["name"], "price": record["p"]["price"]} for record in result]
+#         return jsonify(products)
+
+# # Add a new product
+# @app.route('/api/products', methods=['POST'])
+# def add_product():
+#     data = request.json
+#     name = data.get("name")
+#     price = data.get("price")
     
-def create_central_orders_node(tx):
-    tx.run("MERGE (:Orders {name: 'Central Orders'})")
-
-
-
-@app.route('/api/orders', methods=['POST'])
-def add_order():
-    data = request.json
-    required_fields = ["order_id", "delivery_number", "shipping_address", "status", "price", "pieces"]
+#     if not name or not price:
+#         return jsonify({"error": "Invalid data"}), 400
     
-    # Check for missing fields
-    if not all(field in data for field in required_fields):
-        return jsonify({"error": "Missing fields"}), 400
+#     with driver.session() as session:
+#         session.run(
+#             "CREATE (p:Product {id: apoc.create.uuid(), name: $name, price: $price})",
+#             name=name, price=price
+#         )
+#     return jsonify({"message": "Product added successfully!"}), 201
+
+
+
+# def create_central_orders_node(tx):
+#     tx.run("MERGE (:Orders {name: 'Central Orders'})")
+
+# @app.route('/api/orders', methods=['POST'])
+# def add_order():
+#     data = request.json
+#     required_fields = ["order_id", "delivery_number", "shipping_address", "status", "price", "pieces"]
     
-    # Proceed with adding order to the database
-    with driver.session() as session:
-        session.write_transaction(create_order_node, data["order_id"], data["delivery_number"], 
-                                  data["shipping_address"], data["status"], data["price"], data["pieces"])
+#     # Check for missing fields
+#     if not all(field in data for field in required_fields):
+#         return jsonify({"error": "Missing fields"}), 400
     
-    return jsonify({"message": "Order created successfully"}), 201
+#     # Proceed with adding order to the database
+#     with driver.session() as session:
+#         session.write_transaction(create_order_node, data["order_id"], data["delivery_number"], 
+#                                   data["shipping_address"], data["status"], data["price"], data["pieces"])
+    
+#     return jsonify({"message": "Order created successfully"}), 201
 
 
-def create_order_node(tx, order_id, delivery_number, shipping_address, status, price, pieces):
-    tx.run("""
-        MATCH (orders:Orders)
-        CREATE (order:Order {
-            order_id: $order_id, 
-            delivery_number: $delivery_number, 
-            shipping_address: $shipping_address,
-            status: $status,
-            price: $price,
-            pieces: $pieces
-        })-[:BELONGS_TO]->(orders)
-    """, order_id=order_id, delivery_number=delivery_number, shipping_address=shipping_address, status=status, price=price, pieces=pieces)
+# def create_order_node(tx, order_id, delivery_number, shipping_address, status, price, pieces):
+#     tx.run("""
+#         MATCH (orders:Orders)
+#         CREATE (order:Order {
+#             order_id: $order_id, 
+#             delivery_number: $delivery_number, 
+#             shipping_address: $shipping_address,
+#             status: $status,
+#             price: $price,
+#             pieces: $pieces
+#         })-[:BELONGS_TO]->(orders)
+#     """, order_id=order_id, delivery_number=delivery_number, shipping_address=shipping_address, status=status, price=price, pieces=pieces)
 
 
+
+
+# @app.route('/api/library', methods=['POST'])
+# def add_resource():
+#     data = request.json
+#     if 'title' not in data or 'description' not in data or 'link' not in data:
+#         return jsonify({'error': 'Missing fields'}), 400
+
+#     try:
+#         with driver.session() as session:
+#             session.run("MERGE (main:Resources)")
+#             result = session.run(
+#                 """
+#                 MATCH (main:Resources)
+#                 CREATE (r:Resource {id: randomUUID(), title: $title, description: $description, link: $link})
+#                 MERGE (main)-[:CONTAINS]->(r)
+#                 RETURN r
+#                 """,
+#                 title=data['title'], description=data['description'], link=data['link']
+#             )
+#             new_resource = result.single()['r']
+#             return jsonify(dict(new_resource)), 201
+#     except Exception as e:
+#         return jsonify({'error': str(e)}), 500
+# @app.route('/api/resources', methods=['GET'])
+# def get_resources():
+#     try:
+#         with driver.session() as session:
+#             result = session.run("""
+#                 MATCH (r:Resource)
+#                 RETURN r
+#             """)
+#             resources = []
+#             for record in result:
+#                 res_node = record['r']
+#                 resources.append({
+#                     "id": res_node.identity,  # Use 'identity' for Neo4j internal ID
+#                     "title": res_node["title"],
+#                     "description": res_node["description"],
+#                     "link": res_node["link"]
+#                 })
+#             return jsonify(resources), 200
+#     except Exception as e:
+#         print(f"Error fetching resources: {e}")
+#         return jsonify({"error": "Failed to fetch resources"}), 500
+
+# # Route to add a new resource
+# @app.route('/api/resources', methods=['POST'])
+# def add_resource():
+#     data = request.json
+#     title = data.get('title')
+#     description = data.get('description')
+#     link = data.get('link')
+
+#     if not title or not description or not link:
+#         return jsonify({"error": "All fields are required"}), 400
+
+#     try:
+#         with driver.session() as session:
+#             result = session.run("""
+#                 CREATE (r:Resource {title: $title, description: $description, link: $link})
+#                 RETURN r
+#             """, title=title, description=description, link=link)
+#             record = result.single()
+#             resource = record['r']
+#             return jsonify({
+#                 "id": resource.identity,  # Use 'identity' for Neo4j internal ID
+#                 "title": resource["title"],
+#                 "description": resource["description"],
+#                 "link": resource["link"]
+#             }), 201
+#     except Exception as e:
+#         print(f"Error adding resource: {e}")
+#         return jsonify({"error": "Failed to add resource"}), 500
+
+@app.route('/api/resources', methods=['GET'])
 def get_resources():
-    query = "MATCH (r:Resource) RETURN r"
-    with driver.session() as session:
-        result = session.run(query)
-        resources = [dict(r['r']) for r in result]
-    return jsonify(resources), 200
+    try:
+        with driver.session() as session:
+            result = session.run("MATCH (r:Resource) RETURN r.title AS title, r.description AS description, r.link AS link")
+            resources = [dict(record) for record in result]
+        return jsonify(resources), 200
+    except Exception as e:
+        print(f"Error fetching resources: {e}")
+        return jsonify({"error": "Failed to fetch resources"}), 500
 
-@app.route('/api/library', methods=['POST'])
+@app.route('/api/resources', methods=['POST'])
 def add_resource():
-    data = request.json
-    if 'title' not in data or 'description' not in data or 'link' not in data:
-        return jsonify({'error': 'Missing fields'}), 400
+    new_resource = request.json
+    if 'title' not in new_resource or 'description' not in new_resource or 'link' not in new_resource:
+        return jsonify({"error": "All fields are required"}), 400
 
     try:
         with driver.session() as session:
-            session.run("MERGE (main:Resources)")
-            result = session.run(
-                """
-                MATCH (main:Resources)
-                CREATE (r:Resource {id: randomUUID(), title: $title, description: $description, link: $link})
-                MERGE (main)-[:CONTAINS]->(r)
-                RETURN r
-                """,
-                title=data['title'], description=data['description'], link=data['link']
+            session.run(
+                "CREATE (r:Resource {title: $title, description: $description, link: $link})",
+                title=new_resource['title'],
+                description=new_resource['description'],
+                link=new_resource['link']
             )
-            new_resource = result.single()['r']
-            return jsonify(dict(new_resource)), 201
+        return jsonify(new_resource), 201
     except Exception as e:
-        return jsonify({'error': str(e)}), 500
+        print(f"Error adding resource: {e}")
+        return jsonify({"error": "Failed to add resource"}), 500
+    
+@app.route('/api/products', methods=['GET', 'POST'])
+def manage_products():
+    if request.method == 'GET':
+        return get_products()
+    elif request.method == 'POST':
+        return add_product()
+
+def get_products():
+    with driver.session() as session:
+        result = session.run("""
+            MATCH (main:MainProduct)-[:CONTAINS]->(p:Product)
+            RETURN p
+        """)
+        products = [{
+            "id": record["p"].id,
+            "name": record["p"]["name"],
+            "sku": record["p"]["sku"],
+            "price": record["p"]["price"]
+        } for record in result]
+        return jsonify(products)
+
+def add_product():
+    data = request.json
+    name = data.get('name')
+    sku = data.get('sku')
+    price = data.get('price')
+    
+    if not name or not sku or price is None:
+        return jsonify({"error": "Missing product data"}), 400
+    
+    with driver.session() as session:
+        # Check if main product node exists, create if not
+        session.run("""
+            MERGE (main:MainProduct)
+            ON CREATE SET main.name = 'Main Product Node'
+        """)
+        
+        # Create new product and link to main product node
+        result = session.run("""
+            MATCH (main:MainProduct)
+            CREATE (p:Product {name: $name, sku: $sku, price: $price})
+            CREATE (main)-[:CONTAINS]->(p)
+            RETURN p
+        """, name=name, sku=sku, price=price)
+        
+        new_product = result.single()
+        if new_product:
+            return jsonify({
+                "message": "Product added successfully",
+                "product": {
+                    "id": new_product['p'].id,
+                    "name": new_product['p']['name'],
+                    "sku": new_product['p']['sku'],
+                    "price": new_product['p']['price']
+                }
+            }), 201
+        else:
+            return jsonify({"error": "Failed to add product"}), 500
+        
+@app.route('/api/shipments', methods=['GET', 'POST'])
+def shipments():
+    if request.method == 'GET':
+        return get_shipments()
+    elif request.method == 'POST':
+        return add_shipment()
+
+def get_shipments():
+    with driver.session() as session:
+        result = session.run("""
+            MATCH (main:MainShipment)-[:CONTAINS]->(s:Shipment)
+            RETURN s
+        """)
+        shipments = [{
+            "id": record["s"].id,
+            "shipmentNumber": record["s"]["shipmentNumber"],
+            "destination": record["s"]["destination"],
+            "status": record["s"]["status"],
+            "date": record["s"]["date"]
+        } for record in result]
+        return jsonify(shipments)
+
+def add_shipment():
+    data = request.json
+    shipment_number = data.get('shipmentNumber')
+    destination = data.get('destination')
+    status = data.get('status')
+    date = data.get('date')
+    
+    if not all([shipment_number, destination, status, date]):
+        return jsonify({"error": "Missing shipment data"}), 400
+    
+    with driver.session() as session:
+        # Check if main shipment node exists, create if not
+        session.run("""
+            MERGE (main:MainShipment)
+            ON CREATE SET main.name = 'Main Shipment Node'
+        """)
+        
+        # Create new shipment and link to main shipment node
+        result = session.run("""
+            MATCH (main:MainShipment)
+            CREATE (s:Shipment {shipmentNumber: $shipment_number, destination: $destination, status: $status, date: $date})
+            CREATE (main)-[:CONTAINS]->(s)
+            RETURN s
+        """, shipment_number=shipment_number, destination=destination, status=status, date=date)
+        
+        new_shipment = result.single()
+        if new_shipment:
+            return jsonify({
+                "message": "Shipment added successfully",
+                "shipment": {
+                    "id": new_shipment['s'].id,
+                    "shipmentNumber": new_shipment['s']['shipmentNumber'],
+                    "destination": new_shipment['s']['destination'],
+                    "status": new_shipment['s']['status'],
+                    "date": new_shipment['s']['date']
+                }
+            }), 201
+        else:
+            return jsonify({"error": "Failed to add shipment"}), 500
+        
+@app.route('/api/orders', methods=['GET', 'POST'])
+def orders():
+    if request.method == 'GET':
+        return get_orders()
+    elif request.method == 'POST':
+        return add_order()
+
+def get_orders():
+    with driver.session() as session:
+        result = session.run("""
+            MATCH (main:MainOrder)-[:CONTAINS]->(o:Order)
+            RETURN o
+        """)
+        orders = [{
+            "id": record["o"].id,
+            "deliveryNumber": record["o"]["deliveryNumber"],
+            "shippingAddress": record["o"]["shippingAddress"],
+            "status": record["o"]["status"],
+            "price": record["o"]["price"],
+            "pieces": record["o"]["pieces"]
+        } for record in result]
+        return jsonify(orders)
+
+def add_order():
+    data = request.json
+    delivery_number = data.get('deliveryNumber')
+    shipping_address = data.get('shippingAddress')
+    status = data.get('status')
+    price = data.get('price')
+    pieces = data.get('pieces')
+    
+    if not all([delivery_number, shipping_address, status, price is not None, pieces is not None]):
+        return jsonify({"error": "Missing order data"}), 400
+    
+    with driver.session() as session:
+        # Check if main order node exists, create if not
+        session.run("""
+            MERGE (main:MainOrder)
+            ON CREATE SET main.name = 'Main Order Node'
+        """)
+        
+        # Create new order and link to main order node
+        result = session.run("""
+            MATCH (main:MainOrder)
+            CREATE (o:Order {deliveryNumber: $delivery_number, shippingAddress: $shipping_address, status: $status, price: $price, pieces: $pieces})
+            CREATE (main)-[:CONTAINS]->(o)
+            RETURN o
+        """, delivery_number=delivery_number, shipping_address=shipping_address, status=status, price=price, pieces=pieces)
+        
+        new_order = result.single()
+        if new_order:
+            return jsonify({
+                "message": "Order added successfully",
+                "order": {
+                    "id": new_order['o'].id,
+                    "deliveryNumber": new_order['o']['deliveryNumber'],
+                    "shippingAddress": new_order['o']['shippingAddress'],
+                    "status": new_order['o']['status'],
+                    "price": new_order['o']['price'],
+                    "pieces": new_order['o']['pieces']
+                }
+            }), 201
+        else:
+            return jsonify({"error": "Failed to add order"}), 500
+
+
 
 
 if __name__ == '__main__':

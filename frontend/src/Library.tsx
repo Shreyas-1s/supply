@@ -23,7 +23,7 @@ const Library: React.FC = () => {
   // Fetch resources from the API
   const fetchResources = async () => {
     try {
-      const response = await fetch('/api/library');
+      const response = await fetch('http://127.0.0.1:5000/api/resources');
       const data = await response.json();
       setResources(data);
     } catch (error) {
@@ -41,7 +41,7 @@ const Library: React.FC = () => {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     try {
-      const response = await fetch('/api/library', {
+      const response = await fetch('http://127.0.0.1:5000/api/resources', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(newResource),
@@ -52,7 +52,7 @@ const Library: React.FC = () => {
       }
 
       const addedResource = await response.json();
-      setResources([...resources, addedResource]); // Update the resource list
+      setResources((prev) => [...prev, addedResource]); // Update the resource list
       setNewResource({ title: '', description: '', link: '' }); // Reset the form
     } catch (error) {
       console.error('Error adding resource:', error);

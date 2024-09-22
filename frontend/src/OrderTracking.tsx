@@ -1,152 +1,154 @@
 import React, { useState, useEffect } from 'react';
-import './OrderTracking.css';
+import './OrderTracking.css'; // Assuming you'll create a CSS file for styling
 
-type Order = {
-    order_id: string;
-    delivery_number: string;
-    shipping_address: string;
-    status: string;
-    price: number;
-    pieces: number;
-};
+interface Order {
+  id: string;
+  deliveryNumber: string;
+  shippingAddress: string;
+  status: string;
+  price: number;
+  pieces: number;
+}
 
-const OrderTracking: React.FC = () => {
-    const [orders, setOrders] = useState<Order[]>([]);
-    const [newOrder, setNewOrder] = useState<Order>({
-        order_id: '',
-        delivery_number: '',
-        shipping_address: '',
-        status: '',
-        price: 0,
-        pieces: 0,
-    });
+export default function OrderTracking() {
+  const [orders, setOrders] = useState<Order[]>([]);
+  const [newOrder, setNewOrder] = useState<Omit<Order, 'id'>>({
+    deliveryNumber: '',
+    shippingAddress: '',
+    status: '',
+    price: 0,
+    pieces: 0
+  });
+  const [error, setError] = useState<string | null>(null);
 
-    useEffect(() => {
-        fetch('/api/orders')
-            .then(response => response.json())
-            .then(data => setOrders(data))
-            .catch(error => console.error('Error fetching orders:', error));
-    }, []);
+  useEffect(() => {
+    fetchOrders();
+  }, []);
 
-    const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-        setNewOrder({
-            ...newOrder,
-            [e.target.name]: e.target.value
-        });
-    };
+  const fetchOrders = async () => {
+    setError(null);
+    try {
+      const response = await fetch('http://127.0.0.1:5000/api/orders');
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`);
+      }
+      const data = await response.json();
+      if (Array.isArray(data)) {
+        setOrders(data);
+      } else {
+        throw new Error('Unexpected response format');
+      }
+    } catch (error) {
+      console.error('Error fetching orders:', error);
+      setError('Failed to fetch orders. Please try again later.');
+    }
+  };
 
-    const handleSubmit = (e: React.FormEvent) => {
-        e.preventDefault();
+  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
+    const { name, value } = e.target;
+    setNewOrder(prev => ({
+      ...prev,
+      [name]: name === 'price' || name === 'pieces' ? Number(value) : value
+    }));
+  };
 
-        fetch('/api/orders', {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json',
-            },
-            body: JSON.stringify(newOrder),
-        })
-            .then(response => {
-                if (response.ok) {
-                    return response.json();
-                }
-                throw new Error('Error adding order');
-            })
-            .then(() => {
-                setOrders([...orders, newOrder]);
-                setNewOrder({
-                    order_id: '',
-                    delivery_number: '',
-                    shipping_address: '',
-                    status: '',
-                    price: 0,
-                    pieces: 0,
-                });
-            })
-            .catch(error => console.error(error));
-    };
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setError(null);
+    try {
+      const response = await fetch('http://127.0.0.1:5000/api/orders', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(newOrder)
+      });
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.error || `Error: ${response.status}`);
+      }
+      const data = await response.json();
+      console.log('Order added:', data);
+      fetchOrders(); // Refresh the order list after adding
+      setNewOrder({ deliveryNumber: '', shippingAddress: '', status: '', price: 0, pieces: 0 }); // Reset the form
+    } catch (error) {
+      console.error('Error adding order:', error);
+      setError('Failed to add order. Please try again.');
+    }
+  };
 
-    return (
-        <div className="order-tracking">
-            <h1>Order Tracking</h1>
-            <form onSubmit={handleSubmit}>
-                <input
-                    type="text"
-                    name="order_id"
-                    placeholder="Order ID"
-                    value={newOrder.order_id}
-                    onChange={handleChange}
-                    required
-                />
-                <input
-                    type="text"
-                    name="delivery_number"
-                    placeholder="Delivery Number"
-                    value={newOrder.delivery_number}
-                    onChange={handleChange}
-                    required
-                />
-                <input
-                    type="text"
-                    name="shipping_address"
-                    placeholder="Shipping Address"
-                    value={newOrder.shipping_address}
-                    onChange={handleChange}
-                    required
-                />
-                <input
-                    type="text"
-                    name="status"
-                    placeholder="Status"
-                    value={newOrder.status}
-                    onChange={handleChange}
-                    required
-                />
-                <input
-                    type="number"
-                    name="price"
-                    placeholder="Price"
-                    value={newOrder.price}
-                    onChange={handleChange}
-                    required
-                />
-                <input
-                    type="number"
-                    name="pieces"
-                    placeholder="Pieces"
-                    value={newOrder.pieces}
-                    onChange={handleChange}
-                    required
-                />
-                <button type="submit">Add Order</button>
-            </form>
-            <div className="orders-list">
-                <table>
-                    <thead>
-                        <tr>
-                            <th>Order ID</th>
-                            <th>Delivery Number</th>
-                            <th>Shipping Address</th>
-                            <th>Status</th>
-                            <th>Price</th>
-                            <th>Pieces</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        {orders.map((order, index) => (
-                            <tr key={index}>
-                                <td>{order.order_id}</td>
-                                <td>{order.delivery_number}</td>
-                                <td>{order.shipping_address}</td>
-                                <td>{order.status}</td>
-                                <td>{order.price}</td>
-                                <td>{order.pieces}</td>
-                            </tr>
-                        ))}
-                    </tbody>
-                </table>
-            </div>
-        </div>
-    );
-};
-
-export default OrderTracking;
+  return (
+    <div className="container">
+      <h1>Order Tracking</h1>
+      {error && <div className="error">{error}</div>}
+      <form onSubmit={handleSubmit} className="form">
+        <input
+          type="text"
+          name="deliveryNumber"
+          value={newOrder.deliveryNumber}
+          onChange={handleInputChange}
+          placeholder="Delivery Number"
+          required
+          className="input"
+        />
+        <input
+          type="text"
+          name="shippingAddress"
+          value={newOrder.shippingAddress}
+          onChange={handleInputChange}
+          placeholder="Shipping Address"
+          required
+          className="input"
+        />
+        <input
+          type="text"
+          name="status"
+          value={newOrder.status}
+          onChange={handleInputChange}
+          placeholder="Status"
+          required
+          className="input"
+        />
+        <input
+          type="number"
+          name="price"
+          value={newOrder.price}
+          onChange={handleInputChange}
+          placeholder="Price"
+          required
+          className="input"
+        />
+        <input
+          type="number"
+          name="pieces"
+          value={newOrder.pieces}
+          onChange={handleInputChange}
+          placeholder="Pieces"
+          required
+          className="input"
+        />
+        <button type="submit" className="button">Add Order</button>
+      </form>
+      <table className="table">
+        <thead className="table-header">
+          <tr>
+            <th className="table-head">Delivery Number</th>
+            <th className="table-head">Shipping Address</th>
+            <th className="table-head">Status</th>
+            <th className="table-head">Price</th>
+            <th className="table-head">Pieces</th>
+          </tr>
+        </thead>
+        <tbody>
+          {orders.map(order => (
+            <tr key={order.id}>
+              <td className="table-cell">{order.deliveryNumber}</td>
+              <td className="table-cell">{order.shippingAddress}</td>
+              <td className="table-cell">{order.status}</td>
+              <td className="table-cell">{order.price}</td>
+              <td className="table-cell">{order.pieces}</td>
+            </tr>
+          ))}
+        </tbody>
+      </table>
+    </div>
+  );
+}

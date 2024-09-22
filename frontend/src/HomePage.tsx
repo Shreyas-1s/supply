@@ -37,10 +37,10 @@ const HomePage: React.FC = () => {
                         <h3>Shipments</h3>
                         <p>Get all the shipment details for various orders.</p>
                     </div>
-                    <div className="feature-card">
+                    {/* <div className="feature-card">
                         <h3>RFQ</h3>
                         <p>Request for Quotations to get the pricing details.</p>
-                    </div>
+                    </div> */}
                 </div>
             </div>
             <div className="testimonials-section">
