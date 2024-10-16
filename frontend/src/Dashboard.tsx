@@ -36,12 +36,28 @@ const Dashboard: React.FC = () => {
 
     const [message, setMessage] = useState<string>('');
 
+    const [editingSupplier, setEditingSupplier] = useState<Supplier | null>(null);
+
+
+    // const fetchSuppliers = async () => {
+    //     try {
+    //         const response = await fetch('http://127.0.0.1:5000/suppliers');
+    //         if (response.ok) {
+    //             const data: Supplier[] = await response.json();
+    //             setSuppliers(data);
+    //         } else {
+    //             console.error('Failed to fetch suppliers');
+    //         }
+    //     } catch (error) {
+    //         console.error('Error:', error);
+    //     }
+    // };
     const fetchSuppliers = async () => {
         try {
             const response = await fetch('http://127.0.0.1:5000/suppliers');
             if (response.ok) {
                 const data: Supplier[] = await response.json();
-                setSuppliers(data);
+                setSuppliers(data); // This should now include IDs
             } else {
                 console.error('Failed to fetch suppliers');
             }
@@ -49,6 +65,7 @@ const Dashboard: React.FC = () => {
             console.error('Error:', error);
         }
     };
+    
 
     const fetchParts = async () => {
         try {
@@ -150,6 +167,37 @@ const Dashboard: React.FC = () => {
         }
     };
     
+
+    const handleUpdatesup = async (id: string) => {
+        if (!editingSupplier) return;
+    
+        try {
+            const response = await fetch(`http://127.0.0.1:5000/update_supplier/${id}`, {
+                method: 'PUT',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify(editingSupplier),
+            });
+    
+            if (response.ok) {
+                setMessage('Supplier updated successfully!');
+                fetchSuppliers(); // Refresh the list of suppliers
+                setEditingSupplier(null); // Clear the editing state
+            } else {
+                setMessage('Failed to update supplier.');
+            }
+        } catch (error) {
+            setMessage('Error updating supplier.');
+            console.error('Error:', error);
+        }
+    };
+
+    const startEditing = (supplier: Supplier) => {
+        setEditingSupplier(supplier);
+    };
+    
+    
     
     const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>, type: 'supplier' | 'part' | 'tool') => {
         if (type === 'supplier') {
@@ -226,7 +274,6 @@ const Dashboard: React.FC = () => {
                 <ul>
                     <li><a href="/superadmin">Super Admin</a></li>
                     <li><a href="/ordertracking">Order Tracking</a></li>
-                    <li><a href="#rfq">RFQ</a></li>
                     <li><a href="/products">Products</a></li>
                     <li><a href="/shipments">Shipment</a></li>
                     <li><a href="/library">Library</a></li>
@@ -252,8 +299,8 @@ const Dashboard: React.FC = () => {
                     </div>
                 </section>
                 
-                {/* Conditional Rendering Based on Selected Card */}
-{selectedCard === 'Suppliers' && (
+
+                {selectedCard === 'Suppliers' && (
     <section id="suppliers" className="items-list">
         <h2>Suppliers</h2>
         <form onSubmit={(e) => handleFormSubmit(e, 'supplier')}>
@@ -284,18 +331,55 @@ const Dashboard: React.FC = () => {
             <button type="submit">Add Supplier</button>
         </form>
         {message && <p>{message}</p>}
+
         <ul>
-    {suppliers.map((supplier) => (
-        <li key={supplier.id}>  {/* Add the key prop here */}
-            <span>{supplier.name}</span>
-            <div className="supplier-actions">
-                <button onClick={() => handleDeletesup(supplier.name)}>Delete</button>
-            </div>
-        </li>
-    ))}
-</ul>
+            {suppliers.map((supplier) => (
+                <li key={supplier.id}>
+                    <span>ID: {supplier.id} - {supplier.name}</span>
+                    <div className="supplier-actions">
+                        <button onClick={() => handleDeletesup(supplier.name)}>Delete</button>
+                        <button onClick={() => startEditing(supplier)}>Update</button>
+                    </div>
+                </li>
+            ))}
+        </ul>
+
+        {editingSupplier && (
+            <section id="edit-supplier" className="edit-section">
+                <h2>Edit Supplier</h2>
+                <form onSubmit={(e) => { e.preventDefault(); handleUpdatesup(editingSupplier.id); }}>
+                    <input
+                        type="text"
+                        name="name"
+                        value={editingSupplier.name}
+                        onChange={(e) => setEditingSupplier({ ...editingSupplier, name: e.target.value })}
+                        placeholder="Supplier Name"
+                        required
+                    />
+                    <input
+                        type="email"
+                        name="email"
+                        value={editingSupplier.email}
+                        onChange={(e) => setEditingSupplier({ ...editingSupplier, email: e.target.value })}
+                        placeholder="Supplier Email"
+                        required
+                    />
+                    <input
+                        type="text"
+                        name="company"
+                        value={editingSupplier.company}
+                        onChange={(e) => setEditingSupplier({ ...editingSupplier, company: e.target.value })}
+                        placeholder="Supplier Company"
+                        required
+                    />
+                    <button type="submit">Update Supplier</button>
+                    <button type="button" onClick={() => setEditingSupplier(null)}>Cancel</button>
+                </form>
+            </section>
+        )}
     </section>
 )}
+
 {selectedCard === 'Parts' && (
     <section id="parts" className="items-list">
         <h2>Parts</h2>
@@ -370,6 +454,8 @@ const Dashboard: React.FC = () => {
             </main>
         </div>
     );
+
+    
 };
 
 export default Dashboard;

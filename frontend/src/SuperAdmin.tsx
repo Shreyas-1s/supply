@@ -1,185 +1,661 @@
-import React, { useEffect, useState } from 'react';
-import axios from 'axios';
-import './SuperAdmin.css';
+// import React, { useState, useEffect } from 'react';
 
+// // Define types for your entities
+// type Supplier = {
+//   id: string;
+//   name: string;
+// };
 
-interface User {
-  id: number;
-  username: string;
-  email: string;
-  role: string;
-}
+// type Item = {
+//   id: string;
+//   name: string;
+// };
 
-interface Product {
-  id: number;
+// type City = {
+//   id: string;
+//   name: string;
+// };
+
+// type Relationship = {
+//   from: string;
+//   to: string;
+//   type: string; // e.g., 'DELIVERS_TO', 'HAS_ITEM'
+// };
+
+// const SuperAdmin: React.FC = () => {
+//   const [suppliers, setSuppliers] = useState<Supplier[]>([]);
+//   const [parts, setParts] = useState<Item[]>([]);
+//   const [tools, setTools] = useState<Item[]>([]);
+//   const [cities, setCities] = useState<City[]>([]);
+//   const [relationships, setRelationships] = useState<Relationship[]>([]);
+
+//   const [selectedSupplier, setSelectedSupplier] = useState<string>('');
+//   const [selectedItem, setSelectedItem] = useState<string>('');
+//   const [itemType, setItemType] = useState<'part' | 'tool'>('part');
+//   const [selectedCity, setSelectedCity] = useState<string>('');
+
+//   // Fetch suppliers
+//   // useEffect(() => {
+//   //   const fetchSuppliers = async () => {
+//   //     try {
+//   //       const response = await fetch('http://127.0.0.1:5000/suppliers');
+//   //       const data: Supplier[] = await response.json();
+//   //       setSuppliers(data);
+//   //     } catch (error) {
+//   //       console.error('Error fetching suppliers:', error);
+//   //     }
+//   //   };
+//   //   fetchSuppliers();
+//   // }, []);
+//   useEffect(() => {
+//     const fetchSuppliers = async () => {
+//       try {
+//         const response = await fetch('http://127.0.0.1:5000/suppliers');
+//         if (!response.ok) throw new Error('Error fetching suppliers');
+//         const data: Supplier[] = await response.json();
+//         setSuppliers(data);
+//       } catch (error) {
+//         console.error('Error fetching suppliers:', error);
+//       }
+//     };
+//     fetchSuppliers();
+//   }, []);
+  
+
+//   // Fetch parts
+//   useEffect(() => {
+//     const fetchParts = async () => {
+//       try {
+//         const response = await fetch('http://127.0.0.1:5000/parts');
+//         const data: Item[] = await response.json();
+//         setParts(data);
+//       } catch (error) {
+//         console.error('Error fetching parts:', error);
+//       }
+//     };
+//     fetchParts();
+//   }, []);
+
+//   // Fetch tools
+//   useEffect(() => {
+//     const fetchTools = async () => {
+//       try {
+//         const response = await fetch('http://127.0.0.1:5000/tools');
+//         const data: Item[] = await response.json();
+//         setTools(data);
+//       } catch (error) {
+//         console.error('Error fetching tools:', error);
+//       }
+//     };
+//     fetchTools();
+//   }, []);
+
+//   // Fetch cities
+//   useEffect(() => {
+//     const fetchCities = async () => {
+//       try {
+//         const response = await fetch('http://127.0.0.1:5000/cities');
+//         const data: City[] = await response.json();
+//         setCities(data);
+//       } catch (error) {
+//         console.error('Error fetching cities:', error);
+//       }
+//     };
+//     fetchCities();
+//   }, []);
+
+//   const createRelationship = async (type: 'delivery' | 'item') => {
+//     try {
+//       const payload = type === 'delivery'
+//         ? { supplierId: selectedSupplier, targetId: selectedCity, relationship_type: 'delivers to' }
+//         : { supplierId: selectedSupplier, targetId: selectedItem, relationship_type: 'supplies' };
+  
+//       const response = await fetch('http://127.0.0.1:5000/api/relationship', {  // Make sure the endpoint is '/relationship'
+//         method: 'POST',
+//         headers: { 'Content-Type': 'application/json' },
+//         body: JSON.stringify(payload)
+//       });
+  
+//       if (response.ok) {
+//         // Fetch the updated relationships after creating a new one
+//         fetchRelationships();
+//         // Reset selections
+//         setSelectedSupplier('');
+//         setSelectedItem('');
+//         setSelectedCity('');
+//       }
+//     } catch (error) {
+//       console.error('Error creating relationship:', error);
+//     }
+//   };
+  
+
+//   // Fetch relationships (you can define this as its own function)
+//   const fetchRelationships = async () => {
+//     try {
+//       const response = await fetch('http://127.0.0.1:5000/api/relationships');
+//       const data: Relationship[] = await response.json();
+//       setRelationships(data);
+//     } catch (error) {
+//       console.error('Error fetching relationships:', error);
+//     }
+//   };
+
+//   useEffect(() => {
+//     fetchRelationships();
+//   }, []);
+
+//   const styles = {
+//     container: {
+//       padding: '20px',
+//       maxWidth: '1200px',
+//       margin: '0 auto',
+//     },
+//     title: {
+//       fontSize: '24px',
+//       fontWeight: 'bold',
+//       marginBottom: '20px',
+//     },
+//     grid: {
+//       display: 'grid',
+//       gridTemplateColumns: 'repeat(auto-fit, minmax(300px, 1fr))',
+//       gap: '20px',
+//       marginBottom: '20px',
+//     },
+//     card: {
+//       border: '1px solid #ddd',
+//       borderRadius: '8px',
+//       padding: '20px',
+//       backgroundColor: 'white',
+//       boxShadow: '0 2px 4px rgba(0,0,0,0.1)',
+//     },
+//     cardTitle: {
+//       fontSize: '18px',
+//       fontWeight: 'bold',
+//       marginBottom: '15px',
+//     },
+//     select: {
+//       width: '100%',
+//       padding: '8px',
+//       marginBottom: '10px',
+//       border: '1px solid #ddd',
+//       borderRadius: '4px',
+//     },
+//     button: {
+//       width: '100%',
+//       padding: '10px',
+//       backgroundColor: '#007bff',
+//       color: 'white',
+//       border: 'none',
+//       borderRadius: '4px',
+//       cursor: 'pointer',
+//       marginTop: '10px',
+//     },
+//     disabledButton: {
+//       backgroundColor: '#cccccc',
+//       cursor: 'not-allowed',
+//     },
+//     relationshipItem: {
+//       padding: '10px',
+//       border: '1px solid #ddd',
+//       borderRadius: '4px',
+//       marginBottom: '10px',
+//       backgroundColor: '#f8f9fa',
+//     }
+//   };
+
+//   return (
+//     <div style={styles.container}>
+//       <h1 style={styles.title}>Super Admin Dashboard</h1>
+      
+//       <div style={styles.grid}>
+//         {/* Item Relationship Section */}
+//         <div style={styles.card}>
+//           <h2 style={styles.cardTitle}>Create Item Relationship</h2>
+          
+//           <select 
+//             style={styles.select}
+//             value={selectedSupplier}
+//             onChange={(e) => setSelectedSupplier(e.target.value)}
+//           >
+//             <option value="">Select Supplier</option>
+//             {suppliers.map(supplier => (
+//               <option key={supplier.id} value={supplier.id}>
+//                 {supplier.name}
+//               </option>
+//             ))}
+//           </select>
+
+//           <select 
+//             style={styles.select}
+//             value={itemType}
+//             onChange={(e) => setItemType(e.target.value as "part" | "tool")}
+//           >
+//             <option value="part">Part</option>
+//             <option value="tool">Tool</option>
+//           </select>
+
+//           <select 
+//             style={styles.select}
+//             value={selectedItem}
+//             onChange={(e) => setSelectedItem(e.target.value)}
+//           >
+//             <option value="">Select {itemType}</option>
+//             {(itemType === 'part' ? parts : tools).map(item => (
+//               <option key={item.id} value={item.id}>
+//                 {item.name}
+//               </option>
+//             ))}
+//           </select>
+
+//           <button 
+//             style={{
+//               ...styles.button,
+//               ...((!selectedSupplier || !selectedItem) && styles.disabledButton)
+//             }}
+//             onClick={() => createRelationship('item')}
+//             disabled={!selectedSupplier || !selectedItem}
+//           >
+//             Create Item Relationship
+//           </button>
+//         </div>
+
+//         {/* Delivery Relationship Section */}
+//         <div style={styles.card}>
+//           <h2 style={styles.cardTitle}>Create Delivery Relationship</h2>
+          
+//           <select 
+//             style={styles.select}
+//             value={selectedSupplier}
+//             onChange={(e) => setSelectedSupplier(e.target.value)}
+//           >
+//             <option value="">Select Supplier</option>
+//             {suppliers.map(supplier => (
+//               <option key={supplier.id} value={supplier.id}>
+//                 {supplier.name}
+//               </option>
+//             ))}
+//           </select>
+
+//           <select 
+//             style={styles.select}
+//             value={selectedCity}
+//             onChange={(e) => setSelectedCity(e.target.value)}
+//           >
+//             <option value="">Select City</option>
+//             {cities.map(city => (
+//               <option key={city.id} value={city.id}>
+//                 {city.name}
+//               </option>
+//             ))}
+//           </select>
+
+//           <button 
+//             style={{
+//               ...styles.button,
+//               ...((!selectedSupplier || !selectedCity) && styles.disabledButton)
+//             }}
+//             onClick={() => createRelationship('delivery')}
+//             disabled={!selectedSupplier || !selectedCity}
+//           >
+//             Create Delivery Relationship
+//           </button>
+//         </div>
+//       </div>
+
+//       {/* Relationships Display */}
+//       <div style={styles.card}>
+//         <h2 style={styles.cardTitle}>Current Relationships</h2>
+//         {relationships.map((rel, index) => (
+//           <div key={index} style={styles.relationshipItem}>
+//             {`${rel.from} ${rel.type} ${rel.to}`}
+//           </div>
+//         ))}
+//       </div>
+//     </div>
+//   );
+// };
+
+// export default SuperAdmin;
+
+import React, { useState, useEffect } from 'react';
+
+// Define types for your entities
+type Supplier = {
+  id: string;
   name: string;
-  description: string;
-  price: number;
-  imageUrl: string;
-}
+};
+
+type Item = {
+  id: string;
+  name: string;
+};
+
+type City = {
+  id: string;
+  name: string;
+};
+
+type Relationship = {
+  from: string;
+  to: string;
+  type: string; // e.g., 'DELIVERS_TO', 'SUPPLIES'
+};
 
 const SuperAdmin: React.FC = () => {
-  const [users, setUsers] = useState<User[]>([]);
-  const [products, setProducts] = useState<Product[]>([]);
-  const [editUser, setEditUser] = useState<User | null>(null);
-  const [newProduct, setNewProduct] = useState<Partial<Product>>({});
-  const [loading, setLoading] = useState<boolean>(true);
-  const [error, setError] = useState<string | null>(null);
+  const [suppliers, setSuppliers] = useState<Supplier[]>([]);
+  const [parts, setParts] = useState<Item[]>([]);
+  const [tools, setTools] = useState<Item[]>([]);
+  const [cities, setCities] = useState<City[]>([]);
+  const [relationships, setRelationships] = useState<Relationship[]>([]);
 
+  const [selectedSupplier, setSelectedSupplier] = useState<string>('');
+  const [selectedItem, setSelectedItem] = useState<string>('');
+  const [itemType, setItemType] = useState<'part' | 'tool'>('part');
+  const [selectedCity, setSelectedCity] = useState<string>('');
+
+  // Fetch suppliers, parts, tools, cities, and relationships
   useEffect(() => {
-    fetchUsers();
-    fetchProducts();
+    const fetchSuppliers = async () => {
+      try {
+        const response = await fetch('http://127.0.0.1:5000/suppliers');
+        const data: Supplier[] = await response.json();
+        setSuppliers(data);
+      } catch (error) {
+        console.error('Error fetching suppliers:', error);
+      }
+    };
+    fetchSuppliers();
   }, []);
 
-  const fetchUsers = async () => {
-    setLoading(true);
-    setError(null);
-    try {
-      const response = await axios.get<User[]>('http://localhost:5000/api/users');
-      setUsers(response.data);
-    } catch (err) {
-      setError('Error fetching users. Please try again later.');
-      console.error('Error fetching users:', err);
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  const fetchProducts = async () => {
-    setLoading(true);
-    setError(null);
-    try {
-      const response = await axios.get<Product[]>('http://localhost:5000/api/products');
-      setProducts(response.data);
-    } catch (err) {
-      setError('Error fetching products. Please try again later.');
-      console.error('Error fetching products:', err);
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  const handleDeleteUser = async (userId: number) => {
-    try {
-      await axios.delete(`http://localhost:5000/delete_user/${userId}`);
-      setUsers(users.filter(user => user.id !== userId));
-    } catch (err) {
-      setError('Error deleting user. Please try again later.');
-      console.error('Error deleting user:', err);
-    }
-  };
-
-  const handleEditUser = (user: User) => {
-    setEditUser(user);
-  };
-
-  const handleUpdateUser = async () => {
-    if (editUser) {
+  useEffect(() => {
+    const fetchParts = async () => {
       try {
-        await axios.put(`http://localhost:5000/update_user/${editUser.id}`, editUser);
-        fetchUsers(); // Refresh the user list
-        setEditUser(null);
-      } catch (err) {
-        setError('Error updating user. Please try again later.');
-        console.error('Error updating user:', err);
+        const response = await fetch('http://127.0.0.1:5000/parts');
+        const data: Item[] = await response.json();
+        setParts(data);
+      } catch (error) {
+        console.error('Error fetching parts:', error);
       }
-    }
-  };
+    };
+    fetchParts();
+  }, []);
 
-  const handleChangeUser = (e: React.ChangeEvent<HTMLInputElement>) => {
-    if (editUser) {
-      setEditUser({ ...editUser, [e.target.name]: e.target.value });
-    }
-  };
+  useEffect(() => {
+    const fetchTools = async () => {
+      try {
+        const response = await fetch('http://127.0.0.1:5000/tools');
+        const data: Item[] = await response.json();
+        setTools(data);
+      } catch (error) {
+        console.error('Error fetching tools:', error);
+      }
+    };
+    fetchTools();
+  }, []);
 
-  const handleChangeProduct = (e: React.ChangeEvent<HTMLInputElement>) => {
-    setNewProduct({ ...newProduct, [e.target.name]: e.target.value });
-  };
+  useEffect(() => {
+    const fetchCities = async () => {
+      try {
+        const response = await fetch('http://127.0.0.1:5000/cities');
+        const data: City[] = await response.json();
+        setCities(data);
+      } catch (error) {
+        console.error('Error fetching cities:', error);
+      }
+    };
+    fetchCities();
+  }, []);
 
-  const handleAddProduct = async () => {
+  // const createRelationship = async (type: 'delivery' | 'item') => {
+  //   try {
+  //     const payload = type === 'delivery'
+  //       ? { supplierId: selectedSupplier, targetId: selectedCity, relationship_type: 'delivers to' }
+  //       : { supplierId: selectedSupplier, targetId: selectedItem, relationship_type: 'supplies' };
+
+  //     const response = await fetch('http://127.0.0.1:5000/api/relationship', {
+  //       method: 'POST',
+  //       headers: { 'Content-Type': 'application/json' },
+  //       body: JSON.stringify(payload),
+  //     });
+
+  //     if (response.ok) {
+  //       // Fetch the updated relationships after creating a new one
+  //       fetchRelationships();
+  //       // Reset selections
+  //       setSelectedSupplier('');
+  //       setSelectedItem('');
+  //       setSelectedCity('');
+  //     }
+  //   } catch (error) {
+  //     console.error('Error creating relationship:', error);
+  //   }
+  // };
+  const createRelationship = async (type: 'delivery' | 'item') => {
     try {
-      await axios.post('http://localhost:5000/api/products', newProduct);
-      fetchProducts(); // Refresh the product list
-      setNewProduct({});
-    } catch (err) {
-      setError('Error adding product. Please try again later.');
-      console.error('Error adding product:', err);
+      // Set the appropriate payload and endpoint based on the relationship type
+      let payload: Record<string, any> = {};
+      let endpoint: string | undefined;
+
+      if (type === 'delivery') {
+        // For "delivers to" relationship (supplier -> city)
+        payload = { supplier_id: selectedSupplier, city_id: selectedCity, relationship_type: 'delivers to' };
+        endpoint = 'http://127.0.0.1:5000/api/relationship/delivers_to';
+      } else if (type === 'item') {
+        // For "supplies" relationship (supplier -> part/tool)
+        payload = { supplier_id: selectedSupplier, item_id: selectedItem, relationship_type: 'supplies' };
+        endpoint = 'http://127.0.0.1:5000/api/relationship/supplies';
+      }
+
+      // Check if the endpoint is valid before calling fetch
+      if (!endpoint) {
+        throw new Error('Invalid endpoint.');
+      }
+
+      // Make the POST request to the appropriate endpoint with the correct payload
+      const response = await fetch(endpoint, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload),
+      });
+
+      if (response.ok) {
+        // Fetch the updated relationships after creating a new one
+        fetchRelationships();
+        // Reset selections
+        setSelectedSupplier('');
+        setSelectedItem('');
+        setSelectedCity('');
+      } else {
+        const errorResponse = await response.json();
+        console.error('Error response:', errorResponse);
+      }
+    } catch (error) {
+      console.error('Error creating relationship:', error);
+    }
+  };
+
+
+  const fetchRelationships = async () => {
+    try {
+      const response = await fetch('http://127.0.0.1:5000/api/relationships');
+      const data: Relationship[] = await response.json();
+      setRelationships(data);
+    } catch (error) {
+      console.error('Error fetching relationships:', error);
+    }
+  };
+
+  useEffect(() => {
+    fetchRelationships();
+  }, []);
+
+  const styles = {
+    container: {
+      padding: '20px',
+      maxWidth: '1200px',
+      margin: '0 auto',
+    },
+    title: {
+      fontSize: '24px',
+      fontWeight: 'bold',
+      marginBottom: '20px',
+    },
+    grid: {
+      display: 'grid',
+      gridTemplateColumns: 'repeat(auto-fit, minmax(300px, 1fr))',
+      gap: '20px',
+      marginBottom: '20px',
+    },
+    card: {
+      border: '1px solid #ddd',
+      borderRadius: '8px',
+      padding: '20px',
+      backgroundColor: 'white',
+      boxShadow: '0 2px 4px rgba(0,0,0,0.1)',
+    },
+    cardTitle: {
+      fontSize: '18px',
+      fontWeight: 'bold',
+      marginBottom: '15px',
+    },
+    select: {
+      width: '100%',
+      padding: '8px',
+      marginBottom: '10px',
+      border: '1px solid #ddd',
+      borderRadius: '4px',
+    },
+    button: {
+      width: '100%',
+      padding: '10px',
+      backgroundColor: '#007bff',
+      color: 'white',
+      border: 'none',
+      borderRadius: '4px',
+      cursor: 'pointer',
+      marginTop: '10px',
+    },
+    disabledButton: {
+      backgroundColor: '#cccccc',
+      cursor: 'not-allowed',
+    },
+    relationshipItem: {
+      padding: '10px',
+      border: '1px solid #ddd',
+      borderRadius: '4px',
+      marginBottom: '10px',
+      backgroundColor: '#f8f9fa',
     }
   };
 
   return (
-    <div className="superadmin-container">
-      
-      <div className="main-content">
-        <div className="header">
-          <h1>Manage Users and Products</h1>
+    <div style={styles.container}>
+      <h1 style={styles.title}>Super Admin Dashboard</h1>
+
+      <div style={styles.grid}>
+        {/* Item Relationship Section */}
+        <div style={styles.card}>
+          <h2 style={styles.cardTitle}>Create Item Relationship</h2>
+
+          <select
+            style={styles.select}
+            value={selectedSupplier}
+            onChange={(e) => setSelectedSupplier(e.target.value)}
+          >
+            <option value="">Select Supplier</option>
+            {suppliers.map(supplier => (
+              <option key={supplier.id} value={supplier.id}>
+                {supplier.name}
+              </option>
+            ))}
+          </select>
+
+          <select
+            style={styles.select}
+            value={itemType}
+            onChange={(e) => setItemType(e.target.value as 'part' | 'tool')}
+          >
+            <option value="part">Part</option>
+            <option value="tool">Tool</option>
+          </select>
+
+          <select
+            style={styles.select}
+            value={selectedItem}
+            onChange={(e) => setSelectedItem(e.target.value)}
+          >
+            <option value="">Select {itemType}</option>
+            {(itemType === 'part' ? parts : tools).map(item => (
+              <option key={item.id} value={item.id}>
+                {item.name}
+              </option>
+            ))}
+          </select>
+
+          <button
+            style={{
+              ...styles.button,
+              ...((!selectedSupplier || !selectedItem) && styles.disabledButton)
+            }}
+            onClick={() => createRelationship('item')}
+            disabled={!selectedSupplier || !selectedItem}
+          >
+            Create Item Relationship
+          </button>
         </div>
 
-        <div className="table-container">
-          <h2>Manage Users</h2>
-          {loading ? (
-            <p>Loading...</p>
-          ) : error ? (
-            <p className="error-message">{error}</p>
-          ) : (
-            <table>
-              <thead>
-                <tr>
-                  <th>ID</th>
-                  <th>Username</th>
-                  <th>Email</th>
-                  <th>Role</th>
-                  <th>Actions</th>
-                </tr>
-              </thead>
-              <tbody>
-                {users.map(user => (
-                  <tr key={user.id}>
-                    <td>{user.id}</td>
-                    <td>{user.username}</td>
-                    <td>{user.email}</td>
-                    <td>{user.role}</td>
-                    <td>
-                      <button className="button" onClick={() => handleEditUser(user)}>Edit</button>
-                      <button className="button" onClick={() => handleDeleteUser(user.id)}>Delete</button>
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          )}
+        {/* Delivery Relationship Section */}
+        <div style={styles.card}>
+          <h2 style={styles.cardTitle}>Create Delivery Relationship</h2>
 
-          {editUser && (
-            <div className="edit-user">
-              <h2>Edit User</h2>
-              <label>Username:</label>
-              <input
-                type="text"
-                name="username"
-                value={editUser.username}
-                onChange={handleChangeUser}
-              />
-              <label>Email:</label>
-              <input
-                type="email"
-                name="email"
-                value={editUser.email}
-                onChange={handleChangeUser}
-              />
-              <label>Role:</label>
-              <input
-                type="text"
-                name="role"
-                value={editUser.role}
-                onChange={handleChangeUser}
-              />
-              <button className="button" onClick={handleUpdateUser}>Update</button>
-              <button className="button cancel-button" onClick={() => setEditUser(null)}>Cancel</button>
-            </div>
-          )}
+          <select
+            style={styles.select}
+            value={selectedSupplier}
+            onChange={(e) => setSelectedSupplier(e.target.value)}
+          >
+            <option value="">Select Supplier</option>
+            {suppliers.map(supplier => (
+              <option key={supplier.id} value={supplier.id}>
+                {supplier.name}
+              </option>
+            ))}
+          </select>
+
+          <select
+            style={styles.select}
+            value={selectedCity}
+            onChange={(e) => setSelectedCity(e.target.value)}
+          >
+            <option value="">Select City</option>
+            {cities.map(city => (
+              <option key={city.id} value={city.id}>
+                {city.name}
+              </option>
+            ))}
+          </select>
+
+          <button
+            style={{
+              ...styles.button,
+              ...((!selectedSupplier || !selectedCity) && styles.disabledButton)
+            }}
+            onClick={() => createRelationship('delivery')}
+            disabled={!selectedSupplier || !selectedCity}
+          >
+            Create Delivery Relationship
+          </button>
         </div>
+      </div>
 
-        
+      {/* Relationships Display */}
+      <div style={styles.card}>
+        <h2 style={styles.cardTitle}>Current Relationships</h2>
+        {relationships.map((rel, index) => (
+          <div key={index} style={styles.relationshipItem}>
+            {`${rel.from} ${rel.type} ${rel.to}`}
+          </div>
+        ))}
       </div>
     </div>
   );

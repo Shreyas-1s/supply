@@ -24,8 +24,9 @@ export default function OrderTracking() {
   useEffect(() => {
     fetchOrders();
   }, []);
-
+  const [loading, setLoading] = useState(false);
   const fetchOrders = async () => {
+    setLoading(true);
     setError(null);
     try {
       const response = await fetch('http://127.0.0.1:5000/api/orders');
@@ -40,7 +41,10 @@ export default function OrderTracking() {
       }
     } catch (error) {
       console.error('Error fetching orders:', error);
-      setError('Failed to fetch orders. Please try again later.');
+      console.log('Failed to fetch orders. Please try again later.');
+    }
+    finally {
+      setLoading(false);
     }
   };
 
@@ -69,9 +73,9 @@ export default function OrderTracking() {
       console.log('Order added:', data);
       fetchOrders(); // Refresh the order list after adding
       setNewOrder({ deliveryNumber: '', shippingAddress: '', status: '', price: 0, pieces: 0 }); // Reset the form
-    } catch (error) {
+    } catch (error: any) {
       console.error('Error adding order:', error);
-      setError('Failed to add order. Please try again.');
+      setError(error.message || 'Failed to add order. Please try again.');
     }
   };
 

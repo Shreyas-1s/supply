@@ -2,9 +2,6 @@ from flask import Flask, request, jsonify
 from neo4j import GraphDatabase  # type: ignore
 from flask_cors import CORS
 
-import uuid
-
-
 
 app = Flask(__name__, static_folder='static', template_folder='templates')
 CORS(app, resources={r"/*": {"origins": "http://localhost:5173"}})
@@ -39,11 +36,25 @@ def create_node(label, properties):
 @app.teardown_appcontext
 def close_driver(exception):
     driver.close()
+# def find_all_nodes(label):
+#     with driver.session() as session:
+#         result = session.run(f"MATCH (n:{label}) RETURN n")
+#         nodes = [record["n"] for record in result]
+#         return nodes
+# def find_all_nodes(label):
+#     with driver.session() as session:
+#         result = session.run(f"MATCH (n:{label}) RETURN id(n) AS id, n")
+#         return [record for record in result]
+
 def find_all_nodes(label):
-    with driver.session() as session:
-        result = session.run(f"MATCH (n:{label}) RETURN n")
-        nodes = [record["n"] for record in result]
-        return nodes
+    try:
+        with driver.session() as session:
+            result = session.run(f"MATCH (n:{label}) RETURN id(n) AS id, n")  # Fetching nodes with their IDs
+            return [{"id": record["id"], **record["n"]} for record in result]  # Return a list of dicts with IDs and properties
+    except Exception as e:
+        print(f"Error fetching nodes: {e}")
+        return []
+
 
 
 def delete_node(label, key, value):
@@ -137,38 +148,87 @@ def login():
         print(f"Error during login: {e}")
         return jsonify({"message": "An error occurred during login."}), 500
 
-@app.route('/update_user/<string:email>', methods=['PUT'])
-def update_user_route(email):
-    data = request.json
-    query = "MATCH (n:User {email: $email}) SET n.name = $name, n.password = $password"
-    updated = execute_query(query, {**data, 'email': email}, write=True)
-    if updated:
-        return jsonify({"message": "User updated successfully"}), 200
-    else:
-        return jsonify({"message": "User not found"}), 404
 
 @app.route('/delete_user/<string:email>', methods=['DELETE'])
 def delete_user_route(email):
     deleted = delete_node('User', 'email', email)
     return jsonify({"message": "User deleted successfully" if deleted else "User not found"}), 200 if deleted else 404
 
+
+
 @app.route('/add_supplier', methods=['POST'])
 def add_supplier():
-    data = request.json
-    create_node('Supplier', data)
-    return jsonify({"message": "Supplier added successfully"}), 201
+    new_supplier = request.json
+    if 'name' not in new_supplier or 'email' not in new_supplier or 'company' not in new_supplier:
+        return jsonify({"error": "All fields are required"}), 400
+
+    try:
+        with driver.session() as session:
+            # Create the new supplier node
+            result = session.run(
+                "CREATE (s:Supplier {name: $name, email: $email, company: $company}) RETURN id(s) AS id, s",
+                name=new_supplier['name'],
+                email=new_supplier['email'],
+                company=new_supplier['company']
+            )
+            supplier = result.single()
+            return jsonify({
+                "id": supplier["id"],
+                "name": new_supplier['name'],
+                "email": new_supplier['email'],
+                "company": new_supplier['company']
+            }), 201
+    except Exception as e:
+        print(f"Error adding supplier: {e}")
+        return jsonify({"error": "Failed to add supplier"}), 500
+
 
 @app.route('/suppliers', methods=['GET'])
 def get_suppliers():
-    suppliers = find_all_nodes('Supplier')
-    suppliers_list = [{"name": s["name"], "email": s["email"], "company": s["company"]} for s in suppliers]
-    return jsonify(suppliers_list), 200
+    try:
+        suppliers = find_all_nodes('Supplier')
+        return jsonify(suppliers), 200  # Returns the list directly
+    except Exception as e:
+        print(f"Error fetching suppliers: {e}")
+        return jsonify({"error": "Failed to fetch suppliers"}), 500
+
 
 @app.route('/delete_supplier/<string:name>', methods=['DELETE'])
 def delete_supplier(name):
     deleted = delete_node('Supplier', 'name', name)
     return jsonify({"message": "Supplier deleted successfully!" if deleted else "Supplier not found"}), 200 if deleted else 404
 
+
+
+
+@app.route('/update_supplier/<int:supplier_id>', methods=['PUT'])
+def update_supplier(supplier_id):
+    # Get the JSON data from the request
+    data = request.get_json()
+    
+    new_name = data.get('name')
+    new_email = data.get('email')
+    new_company = data.get('company')
+
+    # Ensure all required fields are provided
+    if not all([new_name, new_email, new_company]):
+        return jsonify({"error": "Missing supplier details"}), 400
+
+    # Update supplier in the Neo4j database using the id() function
+    with driver.session() as session:
+        try:
+            session.run("""
+                MATCH (s:Supplier)
+                WHERE id(s) = $supplier_id
+                SET s.name = $new_name, s.email = $new_email, s.company = $new_company
+                RETURN s
+            """, supplier_id=supplier_id, new_name=new_name, new_email=new_email, new_company=new_company)
+
+            return jsonify({"message": "Supplier updated successfully"}), 200
+        except Exception as e:
+            return jsonify({"error": str(e)}), 500
+
+        
 @app.route('/add_tool', methods=['POST'])
 def add_tool():
     data = request.json
@@ -210,246 +270,6 @@ def get_order(order_id):
     order = result.single() if result else None
     return jsonify(order['o']) if order else jsonify({"error": "Order not found"}), 404 if not order else 200
 
-# @app.route('/add_product', methods=['POST'])
-# def add_product():
-#     data = request.json
-#     create_node('Product', data)
-#     return jsonify({"message": "Product added successfully"}), 201
-
-# @app.route('/products', methods=['GET'])
-# def get_products():
-#     products = find_all_nodes('Product')
-#     products_list = [{"name": p["name"], "description": p["description"], "price": p["price"], "imageUrl": p["imageUrl"]} for p in products]
-#     return jsonify(products_list), 200
-
-# @app.route('/delete_product/<string:name>', methods=['DELETE'])
-# def delete_product(name):
-#     deleted = delete_node('Product', 'name', name)
-#     return jsonify({"message": "Product deleted successfully!" if deleted else "Product not found"}), 200 if deleted else 404
-
-# @app.route('/api/products', methods=['GET', 'POST'])
-# def products():
-#     db = get_db()
-#     try:
-#         with db.session() as session:  # Open the session correctly
-#             result = session.run(
-#                 """
-#                 MATCH (main:Products)-[:CONTAINS]->(p:Product)
-#                 RETURN p
-#                 """
-#             )
-#             products = [{'id': record['p']['id'], 'name': record['p']['name'], 'sku': record['p']['sku'], 'price': record['p']['price']} for record in result]
-#             return jsonify(products), 200
-#     except Exception as e:
-#         return jsonify({'error': str(e)}), 500
-#     finally:
-#         db.close()  # Ensure the driver is closed properly
-
-# @app.route('/api/products', methods=['POST'])
-# def add_product():
-#     db = get_db()
-#     data = request.json
-
-#     if 'name' not in data or 'sku' not in data or 'price' not in data:
-#         return jsonify({'error': 'Missing fields'}), 400
-
-#     try:
-#         with db.session() as session:
-#             result = session.run(
-#                 """
-#                 MATCH (main:Products)
-#                 CREATE (p:Product {id: apoc.create.uuid(), name: $name, sku: $sku, price: $price})
-#                 MERGE (main)-[:CONTAINS]->(p)
-#                 RETURN p
-#                 """,
-#                 name=data['name'], sku=data['sku'], price=data['price']
-#             )
-#             new_product = result.single()['p']
-#             return jsonify(dict(new_product)), 201
-#     except Exception as e:
-#         return jsonify({'error': str(e)}), 500
-#     finally:
-#         db.close()
-
-# @app.route('/api/products', methods=['GET', 'POST'])
-# def products():
-#     if request.method == 'GET':
-#         return get_products()
-#     elif request.method == 'POST':
-#         return add_product()
-
-# def get_products():
-#     db = get_db()
-#     try:
-#         with db.session() as session:
-#             result = session.run(
-#                 """
-#                 MATCH (main:Products)-[:CONTAINS]->(p:Product)
-#                 RETURN p
-#                 """
-#             )
-#             products = [dict(record['p']) for record in result]
-#             return jsonify(products), 200
-#     except Exception as e:
-#         app.logger.error(f"Error fetching products: {str(e)}")
-#         return jsonify({'error': 'Internal server error'}), 500
-
-# def add_product():
-#     db = get_db()
-#     data = request.json
-#     if not all(key in data for key in ['name', 'sku', 'price']):
-#         return jsonify({'error': 'Missing required fields'}), 400
-#     try:
-#         with db.session() as session:
-#             result = session.run(
-#                 """
-#                 MERGE (main:Products)
-#                 CREATE (p:Product {id: apoc.create.uuid(), name: $name, sku: $sku, price: $price})
-#                 MERGE (main)-[:CONTAINS]->(p)
-#                 RETURN p
-#                 """,
-#                 name=data['name'], sku=data['sku'], price=float(data['price'])
-#             )
-#             new_product = dict(result.single()['p'])
-#             return jsonify(new_product), 201
-#     except Exception as e:
-#         app.logger.error(f"Error adding product: {str(e)}")
-#         return jsonify({'error': 'Internal server error'}), 500
-
-# @app.route('/api/products', methods=['GET'])
-# def get_products():
-#     with driver.session() as session:
-#         result = session.run("MATCH (p:Product) RETURN p")
-#         products = [{"id": record["p"]["id"], "name": record["p"]["name"], "price": record["p"]["price"]} for record in result]
-#         return jsonify(products)
-
-# # Add a new product
-# @app.route('/api/products', methods=['POST'])
-# def add_product():
-#     data = request.json
-#     name = data.get("name")
-#     price = data.get("price")
-    
-#     if not name or not price:
-#         return jsonify({"error": "Invalid data"}), 400
-    
-#     with driver.session() as session:
-#         session.run(
-#             "CREATE (p:Product {id: apoc.create.uuid(), name: $name, price: $price})",
-#             name=name, price=price
-#         )
-#     return jsonify({"message": "Product added successfully!"}), 201
-
-
-
-# def create_central_orders_node(tx):
-#     tx.run("MERGE (:Orders {name: 'Central Orders'})")
-
-# @app.route('/api/orders', methods=['POST'])
-# def add_order():
-#     data = request.json
-#     required_fields = ["order_id", "delivery_number", "shipping_address", "status", "price", "pieces"]
-    
-#     # Check for missing fields
-#     if not all(field in data for field in required_fields):
-#         return jsonify({"error": "Missing fields"}), 400
-    
-#     # Proceed with adding order to the database
-#     with driver.session() as session:
-#         session.write_transaction(create_order_node, data["order_id"], data["delivery_number"], 
-#                                   data["shipping_address"], data["status"], data["price"], data["pieces"])
-    
-#     return jsonify({"message": "Order created successfully"}), 201
-
-
-# def create_order_node(tx, order_id, delivery_number, shipping_address, status, price, pieces):
-#     tx.run("""
-#         MATCH (orders:Orders)
-#         CREATE (order:Order {
-#             order_id: $order_id, 
-#             delivery_number: $delivery_number, 
-#             shipping_address: $shipping_address,
-#             status: $status,
-#             price: $price,
-#             pieces: $pieces
-#         })-[:BELONGS_TO]->(orders)
-#     """, order_id=order_id, delivery_number=delivery_number, shipping_address=shipping_address, status=status, price=price, pieces=pieces)
-
-
-
-
-# @app.route('/api/library', methods=['POST'])
-# def add_resource():
-#     data = request.json
-#     if 'title' not in data or 'description' not in data or 'link' not in data:
-#         return jsonify({'error': 'Missing fields'}), 400
-
-#     try:
-#         with driver.session() as session:
-#             session.run("MERGE (main:Resources)")
-#             result = session.run(
-#                 """
-#                 MATCH (main:Resources)
-#                 CREATE (r:Resource {id: randomUUID(), title: $title, description: $description, link: $link})
-#                 MERGE (main)-[:CONTAINS]->(r)
-#                 RETURN r
-#                 """,
-#                 title=data['title'], description=data['description'], link=data['link']
-#             )
-#             new_resource = result.single()['r']
-#             return jsonify(dict(new_resource)), 201
-#     except Exception as e:
-#         return jsonify({'error': str(e)}), 500
-# @app.route('/api/resources', methods=['GET'])
-# def get_resources():
-#     try:
-#         with driver.session() as session:
-#             result = session.run("""
-#                 MATCH (r:Resource)
-#                 RETURN r
-#             """)
-#             resources = []
-#             for record in result:
-#                 res_node = record['r']
-#                 resources.append({
-#                     "id": res_node.identity,  # Use 'identity' for Neo4j internal ID
-#                     "title": res_node["title"],
-#                     "description": res_node["description"],
-#                     "link": res_node["link"]
-#                 })
-#             return jsonify(resources), 200
-#     except Exception as e:
-#         print(f"Error fetching resources: {e}")
-#         return jsonify({"error": "Failed to fetch resources"}), 500
-
-# # Route to add a new resource
-# @app.route('/api/resources', methods=['POST'])
-# def add_resource():
-#     data = request.json
-#     title = data.get('title')
-#     description = data.get('description')
-#     link = data.get('link')
-
-#     if not title or not description or not link:
-#         return jsonify({"error": "All fields are required"}), 400
-
-#     try:
-#         with driver.session() as session:
-#             result = session.run("""
-#                 CREATE (r:Resource {title: $title, description: $description, link: $link})
-#                 RETURN r
-#             """, title=title, description=description, link=link)
-#             record = result.single()
-#             resource = record['r']
-#             return jsonify({
-#                 "id": resource.identity,  # Use 'identity' for Neo4j internal ID
-#                 "title": resource["title"],
-#                 "description": resource["description"],
-#                 "link": resource["link"]
-#             }), 201
-#     except Exception as e:
-#         print(f"Error adding resource: {e}")
-#         return jsonify({"error": "Failed to add resource"}), 500
 
 @app.route('/api/resources', methods=['GET'])
 def get_resources():
@@ -470,8 +290,19 @@ def add_resource():
 
     try:
         with driver.session() as session:
+            # Ensure the Main Resource node exists or create it
+            session.run("""
+            MERGE (main:MainResource)
+            ON CREATE SET main.name = 'Main Resource Node'
+        """)
+
+            # Create the new Resource and connect it to the Main Resource node
             session.run(
-                "CREATE (r:Resource {title: $title, description: $description, link: $link})",
+                """
+                MATCH (main:MainResource)
+                CREATE (r:Resource {title: $title, description: $description, link: $link})
+                CREATE (main)-[:CONTAINS]->(r)
+                """,
                 title=new_resource['title'],
                 description=new_resource['description'],
                 link=new_resource['link']
@@ -480,6 +311,8 @@ def add_resource():
     except Exception as e:
         print(f"Error adding resource: {e}")
         return jsonify({"error": "Failed to add resource"}), 500
+
+
     
 @app.route('/api/products', methods=['GET', 'POST'])
 def manage_products():
@@ -637,6 +470,17 @@ def add_order():
         return jsonify({"error": "Missing order data"}), 400
     
     with driver.session() as session:
+
+        # Check if an order with the same delivery number already exists
+        result = session.run("""
+            MATCH (o:Order {deliveryNumber: $delivery_number})
+            RETURN o
+        """, delivery_number=delivery_number)
+        
+        if result.single():
+            return jsonify({"error": "Delivery number already exists"}), 400
+
+
         # Check if main order node exists, create if not
         session.run("""
             MERGE (main:MainOrder)
@@ -668,6 +512,116 @@ def add_order():
             return jsonify({"error": "Failed to add order"}), 500
 
 
+            
+@app.route('/cities', methods=['GET'])
+def get_cities():
+    try:
+        cities = find_all_nodes('City')  # Fetch cities from your Neo4j database
+        cities_list = [{"id": c["id"], "name": c["name"]} for c in cities]
+        return jsonify(cities_list), 200
+    except Exception as e:
+        print(f"Error fetching cities: {e}")
+        return jsonify({"error": "Failed to fetch cities"}), 500
+    
+
+# def create_relationship(supplier_id, target_id, relationship_type):
+#     with driver.session() as session:
+#         if relationship_type == 'supplies':
+#             # Create a relationship between supplier and part/tool
+#             query = """
+#                 MATCH (s:Supplier {id: $supplier_id}), (i:Item {id: $target_id})
+#                 MERGE (s)-[:SUPPLIES]->(i)
+#                 RETURN s, i
+#             """
+#         elif relationship_type == 'delivers to':
+#             # Create a relationship between supplier and city
+#             query = """
+#                 MATCH (s:Supplier {id: $supplier_id}), (c:City {id: $target_id})
+#                 MERGE (s)-[:DELIVERS_TO]->(c)
+#                 RETURN s, c
+#             """
+#         else:
+#             raise ValueError('Invalid relationship type')
+
+#         result = session.run(query, supplier_id=supplier_id, target_id=target_id)
+#         return result.single()
+
+# @app.route('/api/relationship', methods=['POST'])
+# def create_relationship_api():
+#     data = request.json
+#     supplier_id = data.get('supplierId')
+#     target_id = data.get('targetId')  # Could be a city or part/tool
+#     relationship_type = data.get('relationship_type')  # 'supplies' or 'delivers to'
+
+#     if not supplier_id or not target_id or not relationship_type:
+#         return jsonify({"error": "Missing required fields"}), 400
+
+#     try:
+#         create_relationship(supplier_id, target_id, relationship_type)
+#         return jsonify({"message": f"Relationship '{relationship_type}' created successfully"}), 201
+#     except Exception as e:
+#         print(f"Error creating relationship: {e}")
+#         return jsonify({"error": "Failed to create relationship"}), 500
+
+# # Fetch relationships
+# @app.route('/api/relationships', methods=['GET'])
+# def fetch_relationships():
+#     with driver.session() as session:
+#         query = """
+#             MATCH (s:Supplier)-[r]->(t)
+#             RETURN s.name as from, t.name as to, type(r) as type
+#         """
+#         result = session.run(query)
+#         relationships = [{"from": record["from"], "to": record["to"], "type": record["type"]} for record in result]
+#         return jsonify(relationships), 200
+
+@app.route('/api/relationship/supplies', methods=['POST'])
+def create_supplies_relationship():
+    data = request.json
+    supplier_id = data['supplier_id']
+    part_tool_id = data['part_tool_id']
+
+    query = """
+    MATCH (s:Supplier), (p:PartTool)
+    WHERE ID(s) = $supplier_id AND ID(p) = $part_tool_id
+    CREATE (s)-[:SUPPLIES]->(p)
+    RETURN s, p
+    """
+    
+    with driver.session as session:
+        result = session.run(query, supplier_id=supplier_id, part_tool_id=part_tool_id)
+        return jsonify({'message': 'SUPPLIES relationship created', 'result': result.data()})
+
+# API to create 'DELIVERS_TO' relationship between Supplier and Cities
+@app.route('/api/relationship/delivers_to', methods=['POST'])
+def create_delivers_to_relationship():
+    data = request.json
+    supplier_id = data['supplier_id']
+    city_id = data['city_id']
+
+    query = """
+    MATCH (s:Supplier), (c:City)
+    WHERE ID(s) = $supplier_id AND ID(c) = $city_id
+    CREATE (s)-[:DELIVERS_TO]->(c)
+    RETURN s, c
+    """
+    
+    with driver.session as session:
+        result = session.run(query, supplier_id=supplier_id, city_id=city_id)
+        return jsonify({'message': 'DELIVERS_TO relationship created', 'result': result.data()})
+
+# API to fetch all relationships for a supplier
+@app.route('/api/supplier/<int:supplier_id>/relationships', methods=['GET'])
+def get_supplier_relationships(supplier_id):
+    query = """
+    MATCH (s:Supplier)-[r]->(n)
+    WHERE ID(s) = $supplier_id
+    RETURN s, r, n
+    """
+    
+    with driver.session as session:
+        result = session.run(query, supplier_id=supplier_id)
+        return jsonify({'relationships': result.data()})
 
 
 if __name__ == '__main__':
